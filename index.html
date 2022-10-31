@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortak</title>
+
+
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        h1 {
+            font-size: 5em;
+        }
+
+        div.flex.flex-nowrap.items-center {
+            min-width: 300px;
+            width: 35vw;
+        }
+
+        .shake {
+            animation: shake 1s linear;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0px);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-10px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(10px);
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <secion class="w-screen h-screen flex flex-col items-center justify-center">
+        <h1 class="-mt-20 mb-10">Shortak</h1>
+
+        <div
+            class="flex flex-nowrap items-center gap-4 border rounded-lg border border-solid border-gray-200 px-2 py-2 bg-white">
+            <input type="url" placeholder="Your not short url" class="w-full h-full outline-none bg-transparent"
+                id="url" />
+        </div>
+    </secion>
+
+    <section class="fixed inset-0 bg-green-600 text-white flex flex-col items-center justify-center hidden" id="answer">
+        <h1 class="-mt-10 mb-10">You're welcome</h1>
+
+        <a target="_blank" class="font-bold text-xl"></a>
+
+        <button class="border border-white text-white px-3 py-2 rounded mt-20 hover:bg-white hover:text-green-600">
+            OK, Thanks
+        </button>
+    </section>
+
+    <script>
+        let loading = false;
+
+        const host = `${location.protocol}//${location.hostname}${location.pathname}`
+
+        const urlElement = document.getElementById('url');
+        const answerElement = document.getElementById('answer');
+
+        urlElement.onkeyup = (event) => {
+            if (event.code == "Enter" || event.keyCode == 13) short()
+        }
+
+        answerElement.querySelector('button').onclick = () => close()
+
+        function isURL(str) {
+            var urlRegex = '^(?!mailto:)(?:(?:http|https|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$';
+            var url = new RegExp(urlRegex, 'i');
+            return str.length < 2083 && url.test(str);
+        }
+
+        async function short() {
+            const url = urlElement.value;
+
+            if (loading) return;
+
+            if (url.length == 0 && isURL(url)) {
+                urlElement.parentElement.classList.add('shake');
+
+                setTimeout(() => {
+                    urlElement.parentElement.classList.remove('shake');
+                }, 1000);
+
+                return;
+            }
+            try {
+                loading = true;
+
+                urlElement.classList.add('animate-pulse')
+
+                let res = await fetch(`${host}api/v1/short`, {
+                    method: 'post',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: url
+                    })
+                })
+
+                json = await res.json();
+
+                urlElement.classList.remove('animate-pulse')
+
+                if (json['status']) {
+                    loading = false;
+                    urlElement.value = '';
+                    answerElement.querySelector('a').setAttribute('href', `${host}${json['data']['id']}`);
+                    answerElement.querySelector('a').innerText = `${host}${json['data']['id']}`;
+                    answerElement.classList.remove('hidden');
+                } else {
+                    toast('Somethings get wrong')
+                }
+
+            } catch (error) {
+                toast('Somethings get wrong')
+            }
+
+        }
+
+        function close() {
+            answerElement.classList.add('hidden');
+            answerElement.querySelector('a').removeAttribute('href');
+            answerElement.querySelector('a').innerText = '';
+        }
+
+        function toast(message = "") {
+            const div = document.createElement('div');
+            div.className = "fixed bottom-4 left-4 px-4 py-2 text-white bg-slate-700";
+            div.innerText = message;
+            document.body.appendChild(div);
+
+            setTimeout(() => {
+                document.body.removeChild(div)
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

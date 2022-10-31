@@ -14,8 +14,8 @@ import (
 const __idletters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 var __idlength int = 10
-var __dirname string = "/home/user/workspace/projects/shortak/database/"
-var __port string = "3200"
+var __dirname string = "./database/"
+var __port string = "3300"
 
 type igeneratebody struct {
 	Url string `form:"url" json:"url"  binding:"required"`
@@ -135,6 +135,18 @@ func useAPI() {
 			})
 		} else {
 			c.Redirect(http.StatusMovedPermanently, getShort(key))
+		}
+	})
+
+	server.GET("/", func(c *gin.Context) {
+		if _, err := os.Stat("./index.html"); errors.Is(err, os.ErrNotExist) {
+			c.JSON(200, gin.H{
+				"status":  true,
+				"code":    200,
+				"message": "Welcome to shortak web server",
+			})
+		} else {
+			c.File("./index.html")
 		}
 	})
 
