@@ -7,15 +7,17 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-const __idletters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const __idletters string = "abcdefghijklmnopqrstuvwxyz"
 
 var __idlength int = 10
 var __dirname string = "./database/"
 var __port string = "3300"
+var __subdomain bool = false
 
 type igeneratebody struct {
 	Url string `form:"url" json:"url"  binding:"required"`
@@ -56,6 +58,7 @@ func setup() {
 	_port := os.Getenv("PORT")
 	_dirname := os.Getenv("DBDIR")
 	_length := os.Getenv("LENGTH")
+	_subdomain := os.Getenv("SUBDOMAIN")
 
 	if len(_port) != 0 {
 		__port = _port
@@ -74,10 +77,21 @@ func setup() {
 		__idlength = __length
 	}
 
+	if len(_subdomain) != 0 {
+		__subdomain = _subdomain == "true" || _subdomain == "True"
+	}
+
+	if __subdomain == true {
+		_subdomain = "Yes"
+	} else {
+		_subdomain = "No"
+	}
+
 	fmt.Println("=== SETUP Start ===")
 	fmt.Printf("PORT: %s\n", __port)
 	fmt.Printf("Database Path: %s\n", __dirname)
 	fmt.Printf("ID Length: %v\n", __idlength)
+	fmt.Printf("Useing Subdomain: %v\n", _subdomain)
 	fmt.Println("=== SETUP End ===")
 }
 
@@ -139,14 +153,34 @@ func useAPI() {
 	})
 
 	server.GET("/", func(c *gin.Context) {
-		if _, err := os.Stat("./index.html"); errors.Is(err, os.ErrNotExist) {
-			c.JSON(200, gin.H{
-				"status":  true,
-				"code":    200,
-				"message": "Welcome to shortak web server",
-			})
+		if __subdomain {
+			key := strings.Split(c.Request.Host, ".")[0]
+			if len(key) != __idlength {
+				c.JSON(400, gin.H{
+					"status":  false,
+					"code":    400,
+					"message": "Bad data",
+				})
+			} else if hasShort(key) == false {
+				c.JSON(404, gin.H{
+					"status":  false,
+					"code":    404,
+					"message": "Not found",
+				})
+			} else {
+				c.Redirect(http.StatusMovedPermanently, getShort(key))
+			}
 		} else {
-			c.File("./index.html")
+
+			if _, err := os.Stat("./index.html"); errors.Is(err, os.ErrNotExist) {
+				c.JSON(200, gin.H{
+					"status":  true,
+					"code":    200,
+					"message": "Welcome to shortak web server",
+				})
+			} else {
+				c.File("./index.html")
+			}
 		}
 	})
 
