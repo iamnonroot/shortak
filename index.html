@@ -7,16 +7,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shortak</title>
 
-
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
 
     <style>
         h1 {
-            font-size: 5em;
+            font-size: 6em;
+        }
+
+        p {
+            margin-top: -36px;
+            margin-right: -160px;
+            margin-bottom: 65px;
         }
 
         div.flex.flex-nowrap.items-center {
-            min-width: 300px;
+            min-width: 340px;
             width: 35vw;
         }
 
@@ -52,10 +57,13 @@
 
 <body>
     <secion class="w-screen h-screen flex flex-col items-center justify-center">
-        <h1 class="-mt-20 mb-10">Shortak</h1>
+        <h1 class="-mt-36 text-red-500">
+            Short<span class="text-4xl font-light">ak</span>
+        </h1>
+        <p class="text-xs text-gray-500">Make your url shorter</p>
 
         <div
-            class="flex flex-nowrap items-center gap-4 border rounded-lg border border-solid border-gray-200 px-2 py-2 bg-white">
+            class="flex flex-nowrap items-center gap-4 border rounded-xl border border-solid border-gray-200 px-3 py-3 bg-white transition-all focus-within:border-blue-500 focus-within:shadow-lg">
             <input type="url" placeholder="Your not short url" class="w-full h-full outline-none bg-transparent"
                 id="url" />
         </div>
@@ -74,7 +82,8 @@
     <script>
         let loading = false;
 
-        const host = `${location.protocol}//${location.hostname}${location.pathname}`
+        const endpoint = location.protocol+'//'+location.hostname+location.pathname;
+        const host = "{{.domain}}";
 
         const urlElement = document.getElementById('url');
         const answerElement = document.getElementById('answer');
@@ -110,7 +119,7 @@
 
                 urlElement.classList.add('animate-pulse')
 
-                let res = await fetch(`${host}api/v1/short`, {
+                let res = await fetch(`${endpoint}api/v1/short`, {
                     method: 'post',
                     headers: {
                         'Content-Type': 'application/json'
@@ -127,8 +136,9 @@
                 if (json['status']) {
                     loading = false;
                     urlElement.value = '';
-                    answerElement.querySelector('a').setAttribute('href', `${host}${json['data']['id']}`);
-                    answerElement.querySelector('a').innerText = `${host}${json['data']['id']}`;
+                    const url = host.length == 0 ? 'https://'+json['data']['id']+'.'+host : endpoint+'/'+json['data']['id'];
+                    answerElement.querySelector('a').setAttribute('href', url);
+                    answerElement.querySelector('a').innerText = url;
                     answerElement.classList.remove('hidden');
                 } else {
                     toast('Somethings get wrong')
